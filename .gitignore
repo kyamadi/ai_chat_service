@@ -1,0 +1,52 @@
+# Node modules
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.pytest_cache/
+
+# Flask/Migrate
+migrations/
+instance/
+
+# IDE/editor config
+.idea/
+.vscode/
+*.swp
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# Coverage reports
+coverage/
+*.coverage
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+*.swp
+
+# Cache
+.cache/
+
+venv
