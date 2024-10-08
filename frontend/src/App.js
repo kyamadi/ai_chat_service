@@ -4,10 +4,12 @@ import Register from './components/Auth/Register';
 import Login from './components/Auth/Login';
 import Dashboard from './components/Dashboard/Dashboard';
 import Chat from './components/Chat/Chat';
+import { CssBaseline } from '@mui/material';
 
 function App() {
   return (
     <Router>
+      <CssBaseline />
       <div className="App">
         <Routes>
           <Route path="/" element={<Navigate to="/login" />} />

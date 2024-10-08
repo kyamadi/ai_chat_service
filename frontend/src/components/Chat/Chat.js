@@ -1,18 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { getChatHistory, sendChatPrompt } from '../../services/api';
+import { getChatHistory, sendChatPrompt, getProjects } from '../../services/api';
 import { Container, Box, TextField, Button, Typography, Paper } from '@mui/material';
+import Sidebar from '../Sidebar/Sidebar';
 
 const Chat = () => {
     const { projectId } = useParams();
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
+    const [projects, setProjects] = useState([]);
 
     useEffect(() => {
+        loadProjects();
         if (projectId) {
             loadChatHistory();
         }
     }, [projectId]);
+
+    const loadProjects = async () => {
+        try {
+            const response = await getProjects();
+            setProjects(response.data);
+        } catch (error) {
+            alert('プロジェクトの取得に失敗しました');
+        }
+    };
 
     const loadChatHistory = async () => {
         try {
@@ -36,31 +48,36 @@ const Chat = () => {
     };
 
     return (
-        <Container maxWidth="md">
-            <Box sx={{ mt: 5 }}>
-                <Typography variant="h4" gutterBottom>チャット</Typography>
-                <Paper elevation={3} sx={{ maxHeight: 400, overflow: 'auto', p: 2, mb: 3 }}>
-                    {messages.map((message, index) => (
-                        <Box key={index} sx={{ mb: 2 }}>
-                            <Typography variant="subtitle2" color={message.sender === 'user' ? 'primary' : 'secondary'}>
-                                {message.sender === 'user' ? 'あなた' : 'AI'}
-                            </Typography>
-                            <Typography>{message.content}</Typography>
-                        </Box>
-                    ))}
-                </Paper>
-                <TextField
-                    label="メッセージを入力..."
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    fullWidth
-                    multiline
-                />
-                <Button variant="contained" color="primary" onClick={handleSendMessage} sx={{ mt: 2 }}>
-                    送信
-                </Button>
+        <Box sx={{ display: 'flex' }}>
+            <Sidebar projects={projects} />
+            <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+                <Container maxWidth="md">
+                    <Box sx={{ mt: 5 }}>
+                        <Typography variant="h4" gutterBottom>チャット</Typography>
+                        <Paper elevation={3} sx={{ maxHeight: 400, overflow: 'auto', p: 2, mb: 3 }}>
+                            {messages.map((message, index) => (
+                                <Box key={index} sx={{ mb: 2 }}>
+                                    <Typography variant="subtitle2" color={message.sender === 'user' ? 'primary' : 'secondary'}>
+                                        {message.sender === 'user' ? 'あなた' : 'AI'}
+                                    </Typography>
+                                    <Typography>{message.content}</Typography>
+                                </Box>
+                            ))}
+                        </Paper>
+                        <TextField
+                            label="メッセージを入力..."
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            fullWidth
+                            multiline
+                        />
+                        <Button variant="contained" color="primary" onClick={handleSendMessage} sx={{ mt: 2 }}>
+                            送信
+                        </Button>
+                    </Box>
+                </Container>
             </Box>
-        </Container>
+        </Box>
     );
 };
 

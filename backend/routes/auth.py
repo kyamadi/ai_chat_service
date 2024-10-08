@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from models import db, User
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, unset_jwt_cookies
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -38,4 +38,10 @@ def login():
     access_token = create_access_token(identity={'id': user.id, 'username': user.username})
     return jsonify(access_token=access_token), 200
 
-# ログアウトエンドポイント（JWTのブラックリスト方式などを使用する場合に追加）
+# ログアウトエンドポイント
+@auth_bp.route('/logout', methods=['POST'])
+@jwt_required()
+def logout():
+    response = jsonify({"message": "ログアウトしました"})
+    unset_jwt_cookies(response)  # JWTクッキーを削除してログアウトを完了
+    return response, 200

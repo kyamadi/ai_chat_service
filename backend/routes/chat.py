@@ -38,7 +38,7 @@ def send_prompt(project_id):
         return jsonify({"message": "プロンプトを入力してください"}), 400
 
     # ユーザーのメッセージを保存
-    user_message = Message(project_id=project_id, sender='user', content=prompt, created_at=datetime.utcnow())
+    user_message = Message(project_id=project_id, sender='user', content=prompt, created_at=datetime.now())
     db.session.add(user_message)
     db.session.commit()
 
@@ -46,7 +46,7 @@ def send_prompt(project_id):
     ai_response = get_ai_response(prompt)
 
     # AIのメッセージを保存
-    ai_message = Message(project_id=project_id, sender='ai', content=ai_response, created_at=datetime.utcnow())
+    ai_message = Message(project_id=project_id, sender='ai', content=ai_response, created_at=datetime.now())
     db.session.add(ai_message)
     db.session.commit()
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { registerUser } from '../../services/api';
+import { useNavigate, Link } from 'react-router-dom';
+import { registerUser, loginUser } from '../../services/api';
+import { TextField, Button, Container, Typography, Box } from '@mui/material';
 
 const Register = () => {
     const [username, setUsername] = useState('');
@@ -12,20 +13,53 @@ const Register = () => {
         e.preventDefault();
         try {
             await registerUser({ username, email, password });
-            alert('ユーザー登録が完了しました');
-            navigate('/dashboard'); // ダッシュボードにリダイレクト
+            // 自動的にログインしてダッシュボードに遷移
+            const response = await loginUser({ email, password });
+            localStorage.setItem('token', response.data.access_token);
+            navigate('/dashboard');
         } catch (error) {
             alert(error.response?.data?.message || 'ユーザー登録に失敗しました');
         }
     };
 
     return (
-        <form onSubmit={handleRegister}>
-            <input type="text" placeholder="ユーザー名" value={username} onChange={(e) => setUsername(e.target.value)} />
-            <input type="email" placeholder="メールアドレス" value={email} onChange={(e) => setEmail(e.target.value)} />
-            <input type="password" placeholder="パスワード" value={password} onChange={(e) => setPassword(e.target.value)} />
-            <button type="submit">登録</button>
-        </form>
+        <Container maxWidth="sm">
+            <Box sx={{ mt: 5 }}>
+                <Typography variant="h4" gutterBottom>新規登録</Typography>
+                <form onSubmit={handleRegister}>
+                    <TextField
+                        label="ユーザー名"
+                        type="text"
+                        fullWidth
+                        margin="normal"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                    />
+                    <TextField
+                        label="メールアドレス"
+                        type="email"
+                        fullWidth
+                        margin="normal"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                    />
+                    <TextField
+                        label="パスワード"
+                        type="password"
+                        fullWidth
+                        margin="normal"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <Button type="submit" variant="contained" color="primary" fullWidth sx={{ mt: 2 }}>登録</Button>
+                </form>
+                <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2">
+                        すでにアカウントをお持ちの方は <Link to="/login">こちら</Link> からログインしてください。
+                    </Typography>
+                </Box>
+            </Box>
+        </Container>
     );
 };
 

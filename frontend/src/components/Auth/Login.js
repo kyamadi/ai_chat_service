@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { loginUser } from '../../services/api';
 import { TextField, Button, Container, Typography, Box } from '@mui/material';
 
@@ -42,6 +42,11 @@ const Login = () => {
                     />
                     <Button type="submit" variant="contained" color="primary" fullWidth sx={{ mt: 2 }}>ログイン</Button>
                 </form>
+                <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2">
+                        アカウントをお持ちでない方は <Link to="/register">こちら</Link> から登録してください。
+                    </Typography>
+                </Box>
             </Box>
         </Container>
     );

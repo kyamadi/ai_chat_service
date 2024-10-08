@@ -10,6 +10,12 @@ export const loginUser = (userData) => {
     return axios.post(`${API_URL}/auth/login`, userData);
 };
 
+export const logoutUser = () => {
+    return axios.post(`${API_URL}/auth/logout`, {}, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    });
+};
+
 export const getProjects = () => {
     return axios.get(`${API_URL}/projects/`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
