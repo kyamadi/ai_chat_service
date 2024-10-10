@@ -30,4 +30,4 @@ app.register_blueprint(projects_bp, url_prefix='/api/projects')
 app.register_blueprint(chat_bp, url_prefix='/api/chat')
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
