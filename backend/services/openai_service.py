@@ -32,7 +32,7 @@ def get_ai_response(project, user_prompt):
             model="chatgpt-4o-latest",
             messages=messages,
             temperature=0.7,
-            max_tokens=1500,  # 必要に応じて調整
+            max_tokens=700,  # 必要に応じて調整
         )
 
         # AIの応答を抽出
