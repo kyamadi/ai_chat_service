@@ -105,9 +105,10 @@ const Chat = () => {
     };
 
     return (
-        <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+        <Box sx={{ display: 'flex', height: '100vh' }}>
             <Sidebar projects={projects} />
-            <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+            <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100vh',}}>
+
                 {/* チャットメッセージ表示エリア */}
                 <Box
                     ref={chatContainerRef}
@@ -147,18 +148,26 @@ const Chat = () => {
                             </Paper>
                         </Box>
                     ))}
+                    {/* ローディングインジケーター */}
+                    {loading && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                            <CircularProgress size={24} />
+                            <Typography variant="body2" sx={{ ml: 1 }}>
+                                AIが思考中...
+                            </Typography>
+                        </Box>
+                    )}
                 </Box>
-                {/* ローディングインジケーター */}
-                {loading && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, px: 3 }}>
-                        <CircularProgress size={24} />
-                        <Typography variant="body2" sx={{ ml: 1 }}>
-                            AIが思考中...
-                        </Typography>
-                    </Box>
-                )}
                 {/* メッセージ入力エリア */}
-                <Box sx={{ p: 2, bgcolor: 'white', borderTop: '1px solid #ddd' }}>
+                <Box 
+                    sx={{ 
+                        p: 2, 
+                        bgcolor: 'white', 
+                        borderTop: '1px solid #ddd', 
+                        position: 'sticky', 
+                        bottom: 0 
+                    }}
+                >
                     <Grid container spacing={2} alignItems="center">
                         <Grid item xs>
                             <TextField
