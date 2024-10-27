@@ -2,7 +2,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import db, Message, Project, User
-from services.openai_service import get_ai_response
+from services.openai_service import get_ai_response_with_search as get_ai_response
 from datetime import datetime
 
 chat_bp = Blueprint('chat', __name__)
