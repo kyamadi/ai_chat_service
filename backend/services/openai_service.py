@@ -1,3 +1,5 @@
+# backend/services/openai_service.py
+
 import os
 import logging
 from openai import OpenAI as OpenAI_API
@@ -5,9 +7,12 @@ from dotenv import load_dotenv
 from langchain.chains import LLMChain
 from langchain_openai import OpenAI
 from langchain.prompts import PromptTemplate
-from newspaper import Article
+from newspaper import Article as NewspaperArticle  # 別名でインポート
 from googleapiclient.discovery import build
 from .template_prompt import template_prompt
+from models import db, Article as DBArticle, Message
+from sqlalchemy.exc import IntegrityError
+from datetime import datetime
 
 load_dotenv()
 
@@ -52,7 +57,7 @@ def perform_search(search_query):
         res = service.cse().list(
             q=search_query,
             cx=google_cse_id,
-            num=3,
+            num=5,
         ).execute()
 
         search_results = res.get('items', [])
@@ -71,7 +76,7 @@ def filter_reliable_sources(search_results):
 def fetch_article_content(url):
     try:
         # newspaper3kで記事を取得
-        article = Article(url)
+        article = NewspaperArticle(url)
         article.download()
         article.parse()
 
@@ -113,7 +118,7 @@ def fetch_article_content(url):
             driver.quit()
 
             # newspaper3kでHTMLから記事を解析
-            article = Article(url)
+            article = NewspaperArticle(url)
             article.set_html(html)
             article.parse()
 
@@ -122,6 +127,41 @@ def fetch_article_content(url):
         except Exception as se:
             logging.error(f"Seleniumでの記事取得に失敗しました ({url}): {se}")
             return ""
+
+def save_article(title, url, content):
+    """
+    記事を保存し、既存の場合は既存のレコードを取得。
+    """
+    try:
+        # 既存のArticleを検索
+        article = DBArticle.query.filter_by(title=title, url=url).first()
+        if not article:
+            # 新規記事を作成
+            article = DBArticle(title=title, url=url, content=content)
+            db.session.add(article)
+            db.session.commit()
+            logging.info(f"新規記事を保存しました: {title}")
+        else:
+            logging.info(f"既存の記事を使用します: {title}")
+        return article
+    except IntegrityError:
+        db.session.rollback()
+        logging.warning(f"重複する記事が存在します: {title}, {url}")
+        return DBArticle.query.filter_by(title=title, url=url).first()
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"記事の保存中にエラーが発生しました: {e}")
+        return None
+
+def associate_article_with_message(article, message):
+    """
+    ArticleとMessageの関係を構築。
+    """
+    if article and message:
+        if article not in message.articles:
+            message.articles.append(article)
+            db.session.commit()
+            logging.info(f"Article '{article.title}' をMessage ID {message.id} に関連付けました。")
 
 def get_ai_response_with_search(project, user_prompt):
     try:
@@ -141,29 +181,31 @@ def get_ai_response_with_search(project, user_prompt):
         # フィルタリング（必要に応じて）
         filtered_results = filter_reliable_sources(search_results)
 
+        articles_content = []
+        formatted_search_results = ""
+
         if not filtered_results:
             logging.warning("検索結果が見つかりませんでした。")
             formatted_search_results = "検索結果が見つかりませんでした。"
-            articles_content = ""
         else:
-            articles_content = []
             for result in filtered_results:
                 title = result.get('title', 'No Title')
                 link = result.get('link', '')
                 content = fetch_article_content(link)
                 if content:
+                    # 記事を保存
+                    article = save_article(title, link, content)
                     articles_content.append(f"### {title}\n{content}\nリンク: {link}")
                 else:
                     articles_content.append(f"### {title}\nリンク: {link}\n記事内容の取得に失敗しました。")
 
-            formatted_articles_content = "\n\n".join(articles_content)
             formatted_search_results = "\n".join([f"{i+1}. {result['title']}: {result['link']}" for i, result in enumerate(filtered_results)])
             logging.info(f"整形された検索結果:\n{formatted_search_results}")
-            logging.info(f"記事内容:\n{formatted_articles_content}")
+            logging.info(f"記事内容:\n" + "\n\n".join(articles_content))
 
         # 会話履歴に追加
         if articles_content:
-            conversation_history.append({"role": "system", "content": f"最新の検索結果と記事内容:\n{formatted_articles_content}"})
+            conversation_history.append({"role": "system", "content": f"最新の検索結果と記事内容:\n" + "\n\n".join(articles_content)})
         else:
             conversation_history.append({"role": "system", "content": f"最新の検索結果:\n{formatted_search_results}"})
 
@@ -173,13 +215,28 @@ def get_ai_response_with_search(project, user_prompt):
 
         # OpenAI APIの呼び出し
         response = OpenAI_API(api_key=openai_api_key).chat.completions.create(
-            model="gpt-4o-mini",
+            model="chatgpt-4o-latest",
             messages=messages,
             temperature=0.7,
             max_tokens=1500,
         )
 
         ai_response = response.choices[0].message.content.strip()
+
+        # AIのメッセージをデータベースに保存
+        ai_message = Message(project_id=project.id, sender='ai', content=ai_response, created_at=datetime.utcnow())
+        db.session.add(ai_message)
+        db.session.commit()
+
+        # 関連する記事をメッセージと関連付け
+        if filtered_results:
+            for result in filtered_results:
+                title = result.get('title', 'No Title')
+                link = result.get('link', '')
+                article = DBArticle.query.filter_by(title=title, url=link).first()
+                if article:
+                    associate_article_with_message(article, ai_message)
+
         return ai_response
 
     except Exception as e:

@@ -46,9 +46,9 @@ def send_prompt(project_id):
     # OpenAI APIを呼び出してレスポンスを取得
     ai_response = get_ai_response(project, prompt)
 
-    # AIのメッセージを保存
-    ai_message = Message(project_id=project_id, sender='ai', content=ai_response, created_at=datetime.utcnow())
-    db.session.add(ai_message)
-    db.session.commit()
+    # AIのメッセージを保存部分はいらないのでコメントアウト。
+    # ai_message = Message(project_id=project_id, sender='ai', content=ai_response, created_at=datetime.utcnow())
+    # db.session.add(ai_message)
+    # db.session.commit()
 
     return jsonify({"message": "メッセージが送信されました", "ai_response": ai_response}), 201
