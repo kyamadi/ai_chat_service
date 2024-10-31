@@ -2,10 +2,15 @@
 
 import { useState, useEffect } from 'react';
 
-const useTypewriterEffect = (text, initialSpeed = 30) => {
+const useTypewriterEffect = (text, speed, isActive) => {
     const [displayedText, setDisplayedText] = useState('');
 
     useEffect(() => {
+        if (!isActive) {
+            setDisplayedText(text);
+            return;
+        }
+
         let currentIndex = 0;
         let isCancelled = false;
 
@@ -16,14 +21,14 @@ const useTypewriterEffect = (text, initialSpeed = 30) => {
                 currentIndex++;
 
                 // テキストの長さに応じて速度を調整
-                let speed = initialSpeed;
+                let currentSpeed = speed;
                 if (text.length > 1000) {
-                    speed = initialSpeed / 2;
+                    currentSpeed = speed / 6;
                 } else if (text.length > 2000) {
-                    speed = initialSpeed / 4;
+                    currentSpeed = speed / 6;
                 }
 
-                setTimeout(type, speed);
+                setTimeout(type, currentSpeed);
             }
         };
 
@@ -32,7 +37,7 @@ const useTypewriterEffect = (text, initialSpeed = 30) => {
         return () => {
             isCancelled = true;
         };
-    }, [text, initialSpeed]);
+    }, [text, speed, isActive]);
 
     return displayedText;
 };

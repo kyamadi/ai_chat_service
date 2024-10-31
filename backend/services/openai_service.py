@@ -1,5 +1,4 @@
 # backend/services/openai_service.py
-
 import os
 import logging
 from openai import OpenAI as OpenAI_API
@@ -183,6 +182,7 @@ def get_ai_response_with_search(project, user_prompt):
 
         articles_content = []
         formatted_search_results = ""
+        articles_list = []
 
         if not filtered_results:
             logging.warning("検索結果が見つかりませんでした。")
@@ -195,7 +195,12 @@ def get_ai_response_with_search(project, user_prompt):
                 if content:
                     # 記事を保存
                     article = save_article(title, link, content)
-                    articles_content.append(f"### {title}\n{content}\nリンク: {link}")
+                    if article:
+                        articles_list.append({
+                            "title": article.title,
+                            "url": article.url
+                        })
+                        articles_content.append(f"### {title}\n{content}\nリンク: {link}")
                 else:
                     articles_content.append(f"### {title}\nリンク: {link}\n記事内容の取得に失敗しました。")
 
@@ -229,16 +234,20 @@ def get_ai_response_with_search(project, user_prompt):
         db.session.commit()
 
         # 関連する記事をメッセージと関連付け
-        if filtered_results:
-            for result in filtered_results:
-                title = result.get('title', 'No Title')
-                link = result.get('link', '')
-                article = DBArticle.query.filter_by(title=title, url=link).first()
-                if article:
-                    associate_article_with_message(article, ai_message)
+        if articles_list:
+            for article in articles_list:
+                db_article = DBArticle.query.filter_by(title=article['title'], url=article['url']).first()
+                if db_article:
+                    associate_article_with_message(db_article, ai_message)
 
-        return ai_response
+        return {
+            "ai_response": ai_response,
+            "articles": articles_list
+        }
 
     except Exception as e:
         logging.error(f"Error: {e}")
-        return "エラーが発生しました。もう一度試してください。"
+        return {
+            "ai_response": "エラーが発生しました。もう一度試してください。",
+            "articles": []
+        }

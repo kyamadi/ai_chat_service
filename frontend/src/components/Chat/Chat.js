@@ -9,15 +9,11 @@ import {
     Button, 
     Typography, 
     Grid, 
-    CircularProgress, 
-    Avatar, 
-    Paper 
+    CircularProgress,  
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import Sidebar from '../Sidebar/Sidebar';
-import ReactMarkdown from 'react-markdown';
 import { Light as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { github } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import AnimatedMessage from './AnimatedMessage';
 
 // シンタックスハイライトの言語登録
@@ -98,43 +94,33 @@ const Chat = () => {
 
         // ユーザーメッセージを即座に追加し、isNew: true を設定
         const userMessage = {
+            id: Date.now(), // 一時的なID
             sender: 'user',
             content: newMessage.trim(),
             created_at: new Date().toISOString(),
             isNew: true,
+            articles: []
         };
         setMessages(prevMessages => [...prevMessages, userMessage]);
 
         setLoading(true);
 
-        // プレースホルダーメッセージを追加
-        const aiPlaceholderMessage = {
-            sender: 'ai',
-            content: '',
-            created_at: new Date().toISOString(),
-            isNew: true,
-            isPlaceholder: true,
-        };
-        setMessages(prevMessages => [...prevMessages, aiPlaceholderMessage]);
-
         try {
             const response = await sendChatPrompt(projectId, newMessage.trim());
 
-            // プレースホルダーメッセージを実際の応答で置き換える
-            setMessages(prevMessages => {
-                const messagesWithoutPlaceholder = prevMessages.filter(msg => !msg.isPlaceholder);
-                const aiMessage = {
-                    sender: 'ai',
-                    content: response.data.ai_response,
-                    created_at: new Date().toISOString(),
-                    isNew: true,
-                };
-                return [...messagesWithoutPlaceholder, aiMessage];
-            });
+            // AIメッセージと関連記事を追加
+            const aiMessage = {
+                id: Date.now() + 1, // 一時的なID
+                sender: 'ai',
+                content: response.data.ai_response,
+                created_at: new Date().toISOString(),
+                isNew: true,
+                articles: response.data.articles || []
+            };
+
+            setMessages(prevMessages => [...prevMessages, aiMessage]);
         } catch (error) {
             alert('メッセージの送信に失敗しました');
-            // プレースホルダーメッセージを削除
-            setMessages(prevMessages => prevMessages.filter(msg => !msg.isPlaceholder));
         } finally {
             setLoading(false);
             setNewMessage('');
@@ -162,67 +148,7 @@ const Chat = () => {
                     sx={{ flexGrow: 1, overflowY: 'auto', p: 3, bgcolor: '#f5f5f5' }}
                 >
                     {messages.map((message, index) => (
-                        message.isNew ? (
-                            <AnimatedMessage key={index} message={message} />
-                        ) : (
-                            <Box
-                                key={index}
-                                sx={{
-                                    mb: 2,
-                                    display: 'flex',
-                                    flexDirection: message.sender === 'ai' ? 'row' : 'row-reverse',
-                                    alignItems: 'flex-start',
-                                }}
-                            >
-                                <Avatar
-                                    sx={{ mr: message.sender === 'ai' ? 2 : 0, ml: message.sender === 'ai' ? 0 : 2 }}
-                                    src={message.sender === 'ai' ? '/ai-avatar.png' : '/user-avatar.png'}
-                                    alt={message.sender}
-                                />
-                                <Paper
-                                    elevation={3}
-                                    sx={{
-                                        maxWidth: '70%',
-                                        bgcolor: message.sender === 'ai' ? 'secondary.main' : 'primary.main',
-                                        color: 'white',
-                                        p: 2,
-                                        borderRadius: 2,
-                                    }}
-                                >
-                                    <ReactMarkdown
-                                        components={{
-                                            code({ node, inline, className, children, ...props }) {
-                                                const match = /language-(\w+)/.exec(className || '');
-                                                return !inline && match ? (
-                                                    <SyntaxHighlighter language={match[1]} style={github} {...props}>
-                                                        {String(children).replace(/\n$/, '')}
-                                                    </SyntaxHighlighter>
-                                                ) : (
-                                                    <code className={className} {...props}>
-                                                        {children}
-                                                    </code>
-                                                );
-                                            },
-                                            a({ href, children }) {
-                                                return (
-                                                    <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: '#1976d2' }}>
-                                                        {children}
-                                                    </a>
-                                                );
-                                            },
-                                            img({ alt, src }) {
-                                                return <img src={src} alt={alt} style={{ maxWidth: '100%' }} />;
-                                            },
-                                        }}
-                                    >
-                                        {message.content}
-                                    </ReactMarkdown>
-                                    <Typography variant="caption" sx={{ display: 'block', textAlign: 'right', mt: 0.5 }}>
-                                        {new Date(message.created_at).toLocaleTimeString()}
-                                    </Typography>
-                                </Paper>
-                            </Box>
-                        )
+                        <AnimatedMessage key={index} message={message} />
                     ))}
                     {/* ローディングインジケーター */}
                     {loading && (

@@ -1,7 +1,7 @@
 # backend/routes/chat.py
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from models import db, Message, Project, User
+from models import db, Message, Project
 from services.openai_service import get_ai_response_with_search as get_ai_response
 from datetime import datetime
 
@@ -18,7 +18,13 @@ def get_chat_history(project_id):
         return jsonify({"message": "プロジェクトが見つかりません"}), 404
 
     messages = Message.query.filter_by(project_id=project_id).order_by(Message.created_at).all()
-    chat_history = [{"sender": message.sender, "content": message.content, "created_at": message.created_at} for message in messages]
+    chat_history = [{
+        "id": message.id,
+        "sender": message.sender,
+        "content": message.content,
+        "created_at": message.created_at,
+        "articles": [{"title": article.title, "url": article.url} for article in message.articles]
+    } for message in messages]
     
     return jsonify(chat_history), 200
 
@@ -43,12 +49,11 @@ def send_prompt(project_id):
     db.session.add(user_message)
     db.session.commit()
 
-    # OpenAI APIを呼び出してレスポンスを取得
-    ai_response = get_ai_response(project, prompt)
+    # OpenAI APIを呼び出してレスポンスと記事を取得
+    ai_data = get_ai_response(project, prompt)
 
-    # AIのメッセージを保存部分はいらないのでコメントアウト。
-    # ai_message = Message(project_id=project_id, sender='ai', content=ai_response, created_at=datetime.utcnow())
-    # db.session.add(ai_message)
-    # db.session.commit()
-
-    return jsonify({"message": "メッセージが送信されました", "ai_response": ai_response}), 201
+    return jsonify({
+        "message": "メッセージが送信されました",
+        "ai_response": ai_data.get("ai_response"),
+        "articles": ai_data.get("articles")
+    }), 201
